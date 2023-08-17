@@ -17,14 +17,9 @@ RUN apt install -y git flex bison \
 # Configure nvim
 RUN mkdir -p ~/.config
 RUN mkdir -p ~/.local
-RUN git clone https://github.com/KimWang906/nvim_for_rust.git ~/.config/nvim
-
-# Install lazygit
-WORKDIR /root
-RUN LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*') && \
-    curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz" && \
-    tar xf lazygit.tar.gz lazygit && \
-    install lazygit /usr/local/bin
+RUN git clone --depth 1 https://github.com/AstroNvim/AstroNvim ~/.config/nvim
+RUN nvim --headless
+RUN nvim --headless -c 'LspInstall rust_analyzer clangd pyright' -c 'qa'
 
 # Get Rust
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
@@ -42,15 +37,15 @@ RUN rustup component add rust-src rustfmt clippy
 RUN cargo install --locked --version $(scripts/min-tool-version.sh bindgen) bindgen
 RUN make LLVM=1 allnoconfig qemu-busybox-min.config rust.config
 RUN make LLVM=1 rustavailable
-RUN sed -i 's/# CONFIG_SAMPLES_RUST is not set/CONFIG_SAMPLES_RUST=y/' .config
-RUN make LLVM=1 -j8
-RUN make LLVM=1 -j8 rust-analyzer
+RUN make LLVM=1 -j$(nproc)
+RUN make LLVM=1 -j$(nproc) rust-analyzer
+RUN ./scripts/clang-tools/gen_compile_commands.py
 
 # Configure Busybox
 WORKDIR /home/rust-for-linux_study/busybox
 RUN make defconfig
 RUN sed -i 's/# CONFIG_STATIC is not set/CONFIG_STATIC=y/' .config
-RUN make -j8 && make install
+RUN make -j$(nproc) && make install
 
 WORKDIR /home/rust-for-linux_study/busybox/_install
 RUN mkdir -p etc/init.d
@@ -60,14 +55,14 @@ RUN cp ../examples/inittab etc/ && \
 RUN mkdir -p usr/share/udhcpc
 RUN cp ../examples/udhcp/simple.script \
     usr/share/udhcpc/default.script
-RUN echo 'mkdir -p proc \
-mount -t proc none /proc \
-ifconfig lo up \
-uphcpc -i eth0 \
-mkdir -p /dev/ \
-mount -t devtmpfs none /dev \
-mkdir -p /dev/pts \
-mount -t devpts none /dev/pts \
-telnet' >> etc/init.d/rcS
+RUN echo 'mkdir -p proc\n \
+    mount -t proc none /proc\n \
+    ifconfig lo up\n \
+    udhcpc -i eth0\n \
+    mkdir -p /dev/\n \
+    mount -t devtmpfs none /dev\n \
+    mkdir -p /dev/pts\n \
+    mount -t devpts none /dev/pts\n \
+    telnetd -l localhost 8080\n' >> etc/init.d/rcS
 
 WORKDIR /home/rust-for-linux_study
