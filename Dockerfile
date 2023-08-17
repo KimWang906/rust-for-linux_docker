@@ -18,7 +18,6 @@ RUN apt install -y git flex bison \
 RUN mkdir -p ~/.config
 RUN mkdir -p ~/.local
 RUN git clone --depth 1 https://github.com/AstroNvim/AstroNvim ~/.config/nvim
-RUN nvim --headless
 RUN nvim --headless -c 'LspInstall rust_analyzer clangd pyright' -c 'qa'
 
 # Get Rust
