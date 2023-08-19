@@ -12,13 +12,25 @@ RUN apt install -y git flex bison \
     clang llvm lld build-essential \
     curl libelf-dev bc cpio qemu-kvm \
     telnet netcat-traditional neovim \
-    unzip cmake
+    unzip cmake wget gnupg
+
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - 
+RUN apt-get install -y nodejs
+
+# Install Hack Nerd Fonts
+WORKDIR /home
+RUN wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/Hack.zip
+RUN mkdir Hack
+RUN unzip Hack.zip -d Hack/
+RUN mkdir -p /usr/share/fonts/truetype
+RUN install -m644 Hack/*.ttf /usr/share/fonts/truetype/
+RUN rm -rf /home/Hack
 
 # Configure nvim
 RUN mkdir -p ~/.config
 RUN mkdir -p ~/.local
-RUN git clone --depth 1 https://github.com/AstroNvim/AstroNvim ~/.config/nvim
-RUN nvim --headless -c 'LspInstall rust_analyzer clangd pyright' -c 'qa'
+RUN git clone https://github.com/KimWang906/NvChad ~/.config/nvim
+RUN nvim --headless -c 'TSInstall c rust python dockerfile' -c 'qa'
 
 # Get Rust
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
@@ -63,5 +75,6 @@ RUN echo 'mkdir -p proc\n \
     mkdir -p /dev/pts\n \
     mount -t devpts none /dev/pts\n \
     telnetd -l localhost 8080\n' >> etc/init.d/rcS
+RUN chmod a+x etc/init.d/rcS
 
 WORKDIR /home/rust-for-linux_study
