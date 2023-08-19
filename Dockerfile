@@ -3,11 +3,9 @@ FROM ubuntu:lunar
 WORKDIR /home/rust-for-linux_study
 
 # Install packages
-RUN apt update && \
-    apt install -y software-properties-common && \
-    add-apt-repository ppa:neovim-ppa/unstable -y \
-    && apt upgrade -y
-
+RUN apt update && apt upgrade -y
+RUN apt install -y software-properties-common && \
+    add-apt-repository ppa:neovim-ppa/unstable -y
 RUN apt install -y git flex bison \
     clang llvm lld build-essential \
     curl libelf-dev bc cpio qemu-kvm \
